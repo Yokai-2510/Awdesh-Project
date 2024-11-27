@@ -8,7 +8,7 @@ import os
 from datetime import datetime, timezone, timedelta
 import time
 from login_auto import fetch_access_token
-from websocket_new import start_websocket 
+from websocket import start_websocket 
 from candle_data import fetch_candle_data
 
 # Enable nested event loops
