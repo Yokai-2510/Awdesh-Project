@@ -7,14 +7,9 @@ from google.protobuf.json_format import MessageToDict
 import MarketDataFeed_pb2 as pb
 import pandas as pd
 import requests as rq
-import threading
 import nest_asyncio
-import os
 from datetime import datetime, timezone, timedelta
-import time
-
-# Enable nested event loops
-nest_asyncio.apply()
+nest_asyncio.apply()    # Enable nested event loops
 
 # Initialize global market data dictionary
 market_data = {
@@ -28,8 +23,8 @@ def start_websocket(data_dict):
         with open('access_token.txt', 'r') as file:
             return file.read().strip()
 
-    def initialize_market_data():
-        """Initialize required market data and return instrument keys list"""
+    def initialize_market_data():   #   Initialize required market data and return instrument keys list
+        
         def get_open_value(access_token):
             url = "https://api.upstox.com/v2/market-quote/quotes"
             headers = {
@@ -41,10 +36,9 @@ def start_websocket(data_dict):
             return response.json()['data']['NSE_INDEX:Nifty 50']['ohlc']['open']
 
         def create_options_df(open_value):
-            strike_price_cap = 0
+            strike_price_cap = 1000
             rounded_open = round(open_value / 50) * 50
             strike_range = (rounded_open - strike_price_cap, rounded_open + strike_price_cap)
-            print("strike range")
             
             # Read the instruments data
             instruments_df = pd.read_csv("https://assets.upstox.com/market-quote/instruments/exchange/complete.csv.gz")
@@ -71,8 +65,6 @@ def start_websocket(data_dict):
             
             return data_dict['nifty_option_chain']['instrument_key'].tolist()
 
-        
-
         access_token = get_access_token()
         open_value = get_open_value(access_token)
         instrument_keys = create_options_df(open_value)
@@ -80,16 +72,15 @@ def start_websocket(data_dict):
         
         return access_token, instrument_keys
 
-    def process_nifty_spot(nifty_data):
-        """Extract Nifty 50 spot price from websocket data"""
+
+    def process_nifty_spot(nifty_data): #   Extract Nifty 50 spot price from websocket data
+        
         if nifty_data:
             data_dict['nifty_spot_price'] = nifty_data.get("ff", {}).get("indexFF", {}).get("ltpc", {}).get("ltp")
 
-    def process_nifty_candles(nifty_data):
-        """Process Nifty 50 candle data, convert to IST"""
-        if not nifty_data:
-            return
+    def process_nifty_candles(nifty_data):  #   Process Nifty 50 candle data, convert to IST
         
+        if not nifty_data:  return
         IST_OFFSET = timedelta(hours=5, minutes=30)
         candles = []
 
@@ -104,14 +95,14 @@ def start_websocket(data_dict):
                     "Open": candle.get("open"),
                     "High": candle.get("high"),
                     "Low": candle.get("low"),
-                    "Close": candle.get("close"),
-                })
+                    "Close": candle.get("close"),})
         
-        if candles:
-            data_dict['websocket_candle_data'] = pd.DataFrame(candles)
+        if candles: data_dict['websocket_candle_data'] = pd.DataFrame(candles)
+            
 
-    def process_options_chain(feeds_data):
-        """Process options chain data from websocket feed"""
+
+    def process_options_chain(feeds_data):  #   Process options chain data from websocket feed
+        
         for key, data in feeds_data.items():
             if key != "NSE_INDEX|Nifty 50" and data:
                 market_ff = data.get("ff", {}).get("marketFF", {})
@@ -140,8 +131,8 @@ def start_websocket(data_dict):
                     data_dict['nifty_option_chain'].loc[idx, 'OI'] = feed_details.get("oi")
                     data_dict['nifty_option_chain'].loc[idx, 'POI'] = feed_details.get("poi")
 
-    async def run_market_data_websocket():
-        """Main function to run websocket connection and process market data"""
+    async def run_market_data_websocket():  #   Main function to run websocket connection and process market data"""
+        
         access_token, instrument_keys = initialize_market_data()
         
         # Setup websocket connection
@@ -173,7 +164,7 @@ def start_websocket(data_dict):
                     message = await websocket.recv()
                     feed_data = MessageToDict(pb.FeedResponse().FromString(message))
                     feeds = feed_data.get("feeds", {})
-                    #print("\nfeeds : \n", feeds)
+                    # print("\nfeeds : \n", feeds)
                     
                     # Process each data type - directly updating data_dict
                     process_nifty_spot(feeds.get("NSE_INDEX|Nifty 50"))
@@ -184,32 +175,11 @@ def start_websocket(data_dict):
                     print(f"Error in websocket processing: {e}")
                     await asyncio.sleep(1)
 
-    """Function to run in separate thread"""
-    loop = asyncio.new_event_loop()
+    loop = asyncio.new_event_loop() #   Function to run in separate thread
     asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(run_market_data_websocket())
-    except Exception as e:
-        print(f"Websocket thread error: {e}")
-    finally:
-        loop.close()
+    try:    loop.run_until_complete(run_market_data_websocket())
+    except Exception as e:  print(f"Websocket thread error: {e}")
+    finally:    loop.close()
 
 if __name__ == "__main__":
     start_websocket()
-    # # Start websocket in a separate thread
-    # market_data_thread = threading.Thread(target=start_websocket, args=(market_data,))
-    # market_data_thread.daemon = True
-    # market_data_thread.start()
-    
-    # # Main thread can monitor the data
-    # try:
-    #     while True:
-    #         os.system('cls' if os.name == 'nt' else 'clear')
-    #         print(f"\nNifty Spot: {market_data['nifty_spot_price']}")
-    #         print(f"\nOptions Chain Shape: {market_data['nifty_option_chain'].shape}")
-    #         print(f"\nOptions Chain Data:\n{market_data['nifty_option_chain']}")
-    #         print(f"\nNifty Candles Shape: {market_data['websocket_candle_data'].shape}")
-    #         print(f"\nNifty Candles Data:\n{market_data['websocket_candle_data']}")
-    #         time.sleep(1)
-    # except KeyboardInterrupt:
-    #     print("Shutting down...")
