@@ -104,8 +104,8 @@ def fetch_candle_data(market_data):
     import time
 
     instrument_key = "NSE_INDEX|Nifty 50"
-    candles_count = 15
-    time_interval = 7  # in minutes
+    candles_count = 20
+    time_interval = 5  # in minutes
     historical_candle_fetched = False
     while True:
         time.sleep(2)
