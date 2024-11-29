@@ -10,9 +10,8 @@ import time
 from login_auto import fetch_access_token
 from websocket import start_websocket 
 from candle_data import fetch_candle_data
+nest_asyncio.apply()    #   Enable nested event loops
 
-# Enable nested event loops
-nest_asyncio.apply()
 
 # Initialize data dictionary with default values
 market_data = {
@@ -21,15 +20,15 @@ market_data = {
     'complete_candle_data': pd.DataFrame(),
     'historical_candle_data': pd.DataFrame(),
     'intraday_candle_data': pd.DataFrame(),
-    'nifty_option_chain': pd.DataFrame()
-    }
+    'nifty_option_chain': pd.DataFrame()    }
 
 
 
 if __name__ == "__main__":
 
- 
-    fetch_access_token(credentials_file='credentials.json') #Fetch Access Token using Auto Login 
+
+    #   Fetch Access Token using Auto Login 
+    fetch_access_token(credentials_file='credentials.json') 
 
 
     # Start websocket in a separate thread
@@ -44,16 +43,16 @@ if __name__ == "__main__":
     candle_data_thread.daemon = True
     candle_data_thread.start()
 
+
     try:
         while True:
             os.system('cls' if os.name == 'nt' else 'clear')
-            #print(f"\nNifty Spot: {market_data['nifty_spot_price']}")
-            # print(f"\nOptions Chain Data \n: {market_data['nifty_option_chain']}")
+            #   print(f"\nNifty Spot: {market_data['nifty_spot_price']}")
+            #   print(f"\nOptions Chain Data \n: {market_data['nifty_option_chain']}")
             print(f"\n Complete Candles Data : \n{market_data['complete_candle_data']}")
-            # print(f"\n websocket Candles Data : \n{market_data['websocket_candle_data']}")
-            # print(f"\n Intraday Candles Data : \n{market_data['intraday_candle_data']}")
-            # print(f"\n Historical Candles Data : \n{market_data['historical_candle_data']}")
+            #   print(f"\n websocket Candles Data : \n{market_data['websocket_candle_data']}")
+            #   print(f"\n Intraday Candles Data : \n{market_data['intraday_candle_data']}")
+            #   print(f"\n Historical Candles Data : \n{market_data['historical_candle_data']}")
             time.sleep(3)
 
-    except KeyboardInterrupt:
-        print("Shutting down...")
+    except KeyboardInterrupt:   print("Shutting down...")
